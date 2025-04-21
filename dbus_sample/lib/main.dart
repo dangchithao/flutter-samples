@@ -56,19 +56,18 @@ class _MyHomePageState extends State<MyHomePage> {
         'org.freedesktop.DBus.Properties',
         'Get',
         [DBusString('org.a11y.Status'), DBusString('IsEnabled')],
-        replySignature: DBusSignature('v'),
+        replySignature: DBusSignature('b'),
       );
-      _isEnabled = true;
-      //(isEnabledResult.returnValues[0] as DBusVariant).value.asBool();
+      _isEnabled = (isEnabledResult.returnValues[0] as DBusBoolean).value;
 
       var screenReaderResult = await _dbus.callMethod(
         'org.freedesktop.DBus.Properties',
         'Get',
         [DBusString('org.a11y.Status'), DBusString('ScreenReaderEnabled')],
-        replySignature: DBusSignature('v'),
+        replySignature: DBusSignature('b'),
       );
-      _screenReaderEnabled = false;
-      //(screenReaderResult.returnValues[0] as DBusVariant).value.asBool();
+      _screenReaderEnabled =
+          (screenReaderResult.returnValues[0] as DBusBoolean).value;
 
       setState(() {
         _status = 'Properties loaded';
@@ -118,11 +117,15 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Future<void> _toggleIsEnabled() async {
     try {
-      await _dbus.callMethod('org.freedesktop.DBus.Properties', 'Set', [
-        DBusString('org.a11y.Status'),
-        DBusString('IsEnabled'),
-        DBusVariant(DBusBoolean(!_isEnabled)),
-      ], replySignature: DBusSignature(''));
+      await _dbus.callMethod(
+          'org.freedesktop.DBus.Properties',
+          'Set',
+          [
+            DBusString('org.a11y.Status'),
+            DBusString('IsEnabled'),
+            DBusVariant(DBusBoolean(!_isEnabled)),
+          ],
+          replySignature: DBusSignature(''));
       setState(() {
         _isEnabled = !_isEnabled;
         _status = 'IsEnabled set to $_isEnabled';
@@ -136,11 +139,15 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Future<void> _toggleScreenReaderEnabled() async {
     try {
-      await _dbus.callMethod('org.freedesktop.DBus.Properties', 'Set', [
-        DBusString('org.a11y.Status'),
-        DBusString('ScreenReaderEnabled'),
-        DBusVariant(DBusBoolean(!_screenReaderEnabled)),
-      ], replySignature: DBusSignature(''));
+      await _dbus.callMethod(
+          'org.freedesktop.DBus.Properties',
+          'Set',
+          [
+            DBusString('org.a11y.Status'),
+            DBusString('ScreenReaderEnabled'),
+            DBusVariant(DBusBoolean(!_screenReaderEnabled)),
+          ],
+          replySignature: DBusSignature(''));
       setState(() {
         _screenReaderEnabled = !_screenReaderEnabled;
         _status = 'ScreenReaderEnabled set to $_screenReaderEnabled';
