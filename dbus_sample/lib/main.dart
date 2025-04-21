@@ -58,7 +58,8 @@ class _MyHomePageState extends State<MyHomePage> {
         [DBusString('org.a11y.Status'), DBusString('IsEnabled')],
         replySignature: DBusSignature('b'),
       );
-      _isEnabled = (isEnabledResult.returnValues[0] as DBusBoolean).value;
+      _isEnabled =
+          (isEnabledResult.returnValues[0] as DBusVariant).value as bool;
 
       var screenReaderResult = await _dbus.callMethod(
         'org.freedesktop.DBus.Properties',
@@ -67,7 +68,7 @@ class _MyHomePageState extends State<MyHomePage> {
         replySignature: DBusSignature('b'),
       );
       _screenReaderEnabled =
-          (screenReaderResult.returnValues[0] as DBusBoolean).value;
+          (screenReaderResult.returnValues[0] as DBusVariant).value as bool;
 
       setState(() {
         _status = 'Properties loaded';
