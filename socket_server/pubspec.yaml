@@ -9,6 +9,8 @@ environment:
 # Add regular dependencies here.
 dependencies:
   dbus: ^0.7.11
+  shelf: ^1.4.2
+  shelf_web_socket: ^3.0.0
   # path: ^1.8.0
 
 dev_dependencies:
