@@ -73,6 +73,8 @@ void startSocketServer() async {
             replySignature: replySignature,
           );
 
+          print('$interface-$member result: $result');
+
           webSocket.sink.add(jsonEncode({
             'status': 'success',
             'returnValues':
