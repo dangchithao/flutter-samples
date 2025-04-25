@@ -59,14 +59,14 @@ class DBusRemoteObjectProxy {
   static const String _port =
       String.fromEnvironment('WEBSOCKET_PORT', defaultValue: '3030');
   String? serviceName;
-  DBusObjectPath? path;
+  String? pathValue;
 
   DBusRemoteObjectProxy(DBusClient? client,
       {String? name, DBusObjectPath? path})
       : _object = DBusRemote.getObjectInstance(client, name, path),
         _useWebSocket = kIsWeb {
     serviceName = name;
-    path = path;
+    pathValue = path?.value;
     if (_useWebSocket) {
       _connectToWebSocket();
 
@@ -107,7 +107,7 @@ class DBusRemoteObjectProxy {
 
       final request = jsonEncode({
         'serviceName': serviceName,
-        'path': path?.toNative(),
+        'path': pathValue,
         'interface': interface,
         'member': member,
         'values': values.map((v) => v.toNative()).toList(),
