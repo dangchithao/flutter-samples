@@ -1,7 +1,7 @@
 name: dbus_remote_proxy
 description: "A new Flutter package project."
 version: 1.0.0
-homepage:
+homepage: https://github.com/dangchithao/flutter-samples/tree/main/dbus_remote_proxy
 
 environment:
   sdk: ^3.6.2
