@@ -146,6 +146,5 @@ void startSocketServer() async {
 
   print('Serving at ws://${server.address.host}:${server.port}');
 
-  await sessionClient.ping();
-  await systemClient.ping();
+  await Future.wait([sessionClient.close(), systemClient.close()]);
 }
