@@ -7,29 +7,48 @@ import 'package:dbus/dbus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
+const String systemService = 'system';
+
 // convert native value to DBusValue
 DBusValue fromNativeValue(dynamic value) {
   if (value is String) {
     return DBusString(value);
   } else if (value is int) {
-    return DBusInt32(value);
+    if (value.bitLength <= 8) return DBusByte(value);
+    if (value.bitLength <= 16) return DBusInt16(value);
+    if (value.bitLength <= 32) return DBusInt32(value);
+    return DBusInt64(value);
   } else if (value is bool) {
     return DBusBoolean(value);
   } else if (value is double) {
     return DBusDouble(value);
   } else if (value is List) {
-    return DBusArray(
-      DBusSignature(value.isNotEmpty
-          ? fromNativeValue(value.first).signature.value
-          : 'v'),
-      value.map((v) => fromNativeValue(v)).toList(),
-    );
+    if (value.isNotEmpty && value.first is Map) {
+      return DBusArray(
+        DBusSignature('a{ss}'),
+        value.map((v) => fromNativeValue(v)).toList(),
+      );
+    } else if (value.isNotEmpty && value.first is List) {
+      return DBusArray(
+        DBusSignature('aa{ss}'),
+        value.map((v) => fromNativeValue(v)).toList(),
+      );
+    } else {
+      return DBusArray(
+        DBusSignature(value.isNotEmpty
+            ? fromNativeValue(value.first).signature.value
+            : 'v'),
+        value.map((v) => fromNativeValue(v)).toList(),
+      );
+    }
   } else if (value is Map) {
     return DBusDict(
       DBusSignature('s'),
-      DBusSignature('v'),
-      value.map(
-          (k, v) => MapEntry(DBusString(k.toString()), fromNativeValue(v))),
+      DBusSignature('s'),
+      value.map((k, v) => MapEntry(
+            DBusString(k.toString()),
+            DBusString(v.toString()),
+          )),
     );
   } else {
     throw Exception('Unsupported native value type: ${value.runtimeType}');
@@ -38,12 +57,13 @@ DBusValue fromNativeValue(dynamic value) {
 
 class DBusRemote {
   static DBusRemoteObject? getObjectInstance(
-      DBusClient? client, String? name, DBusObjectPath? path) {
+      String? type, String? name, DBusObjectPath? path) {
     if (kIsWeb) {
       return null;
     }
 
-    DBusClient dbusClient = client ?? DBusClient.session();
+    DBusClient dbusClient =
+        type == systemService ? DBusClient.system() : DBusClient.session();
 
     return DBusRemoteObject(dbusClient, name: name!, path: path!);
   }
@@ -60,15 +80,17 @@ class DBusRemoteObjectProxy {
       String.fromEnvironment('WEBSOCKET_IP', defaultValue: '127.0.0.1');
   static const String _port =
       String.fromEnvironment('WEBSOCKET_PORT', defaultValue: '3030');
-  String? serviceName;
   String? pathValue;
 
-  DBusRemoteObjectProxy(DBusClient? client,
-      {String? name, DBusObjectPath? path})
-      : _object = DBusRemote.getObjectInstance(client, name, path),
+  final String type;
+  final String name;
+  final DBusObjectPath path;
+
+  DBusRemoteObjectProxy(
+      {required this.type, required this.name, required this.path})
+      : _object = DBusRemote.getObjectInstance(type, name, path),
         _useWebSocket = kIsWeb {
-    serviceName = name;
-    pathValue = path?.value;
+    pathValue = path.value;
     if (_useWebSocket) {
       _connectToWebSocket();
 
@@ -108,7 +130,8 @@ class DBusRemoteObjectProxy {
       }
 
       final request = jsonEncode({
-        'serviceName': serviceName,
+        'serviceName': name,
+        'serviceType': type,
         'path': pathValue,
         'interface': interface,
         'member': member,
