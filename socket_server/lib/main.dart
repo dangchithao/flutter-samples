@@ -69,7 +69,8 @@ dynamic parseDBusValue(DBusValue value) {
 }
 
 void startSocketServer() async {
-  DBusClient client = DBusClient.session();
+  DBusClient sessionClient = DBusClient.session();
+  DBusClient systemClient = DBusClient.system();
   print('Connected to D-Bus session bus');
 
   final handler = webSocketHandler((webSocket, _) {
@@ -93,10 +94,7 @@ void startSocketServer() async {
               ? DBusSignature(params['replySignature'])
               : null;
 
-          if (serviceType == 'system') {
-            client = DBusClient.system();
-          }
-
+          final client = serviceType == 'system' ? systemClient : sessionClient;
           final object = DBusRemoteObject(
             client,
             name: serviceName,
@@ -148,5 +146,6 @@ void startSocketServer() async {
 
   print('Serving at ws://${server.address.host}:${server.port}');
 
-  await client.ping();
+  await sessionClient.ping();
+  await systemClient.ping();
 }
