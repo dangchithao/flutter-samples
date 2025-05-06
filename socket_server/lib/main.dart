@@ -37,7 +37,7 @@ DBusValue fromNativeValue(dynamic value) {
 }
 
 void startSocketServer() async {
-  final client = DBusClient.session();
+  DBusClient client = DBusClient.session();
   print('Connected to D-Bus session bus');
 
   final handler = webSocketHandler((webSocket, _) {
@@ -50,6 +50,7 @@ void startSocketServer() async {
         try {
           final params = jsonDecode(message);
           final String serviceName = params['serviceName'];
+          final String serviceType = params['serviceType'];
           final String path = params['path'];
           final String interface = params['interface'];
           final String member = params['member'];
@@ -59,6 +60,10 @@ void startSocketServer() async {
           final replySignature = params['replySignature'] != null
               ? DBusSignature(params['replySignature'])
               : null;
+
+          if (serviceType == 'system') {
+            client = DBusClient.system();
+          }
 
           final object = DBusRemoteObject(
             client,
@@ -73,12 +78,15 @@ void startSocketServer() async {
             replySignature: replySignature,
           );
 
+          print('result: $result');
+
           webSocket.sink.add(jsonEncode({
             'status': 'success',
             'returnValues':
                 result.returnValues.map((v) => v.toNative()).toList(),
           }));
         } catch (e) {
+          print('Internal Server Error: $e');
           webSocket.sink.add(jsonEncode({
             'status': 'error',
             'message': e.toString(),
