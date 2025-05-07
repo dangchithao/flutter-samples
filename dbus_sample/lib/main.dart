@@ -50,12 +50,18 @@ class _AccessibilityScreenState extends State<AccessibilityScreen> {
 
   Future<void> _initialize() async {
     try {
-      _client = kIsWeb ? null : DBusClient.session();
+      // _object = DBusRemoteObjectProxyA(
+      //   type: 'session',
+      //   name: 'org.a11y.Bus',
+      //   path: DBusObjectPath('/org/a11y/bus'),
+      // );
+
       _object = DBusRemoteObjectProxy(
-        _client,
-        name: 'org.a11y.Bus',
-        path: DBusObjectPath('/org/a11y/bus'),
+        name: 'com.atlas.AppManager1',
+        type: 'system',
+        path: DBusObjectPath('/com/atlas/AppManager1'),
       );
+
       setState(() {
         _status = kIsWeb ? 'Connected to WebSocket' : 'Connected to D-Bus';
       });
@@ -73,16 +79,57 @@ class _AccessibilityScreenState extends State<AccessibilityScreen> {
     });
 
     try {
+      // final result = await _object!.callMethod(
+      //   'org.a11y.Bus',
+      //   'GetAddress',
+      //   [],
+      //   replySignature: DBusSignature('s'),
+      // );
+      // final address = result.returnValues[0].asString();
+
       final result = await _object!.callMethod(
-        'org.a11y.Bus',
-        'GetAddress',
-        [],
-        replySignature: DBusSignature('s'),
-      );
-      final address = result.returnValues[0].asString();
+          "com.atlas.AppManager1", 'GetAllList', [],
+          replySignature: DBusSignature('aa{ss}'));
+
+      // final appList = result.returnValues[0] as DBusArray; // aa{ss}
+      // print('=>>>>>> appList: ${appList.children}');
+      // final apps = appList.children.map((appArray) {
+      //   // appArray là DBusArray (a{ss})
+      //   return (appArray as DBusArray).children.map((dict) {
+      //     if (dict is! DBusDict) {
+      //       throw Exception('Expected DBusDict, got ${dict.runtimeType}');
+      //     }
+      //     // dict là DBusDict ({ss})
+      //     final appDict = dict as DBusDict;
+      //     return Map.fromEntries(appDict.children.entries.map((entry) {
+      //       return MapEntry(
+      //         (entry.key as DBusString).value,
+      //         (entry.value as DBusString).value,
+      //       );
+      //     }));
+      //   }).toList();
+      // }).toList();
+
+      final appList = result.returnValues[0] as DBusArray;
+      print(
+          'appList type: ${appList.runtimeType}, signature: ${appList.signature}, children length: ${appList.children.length}');
+      final apps = appList.children.map((dict) {
+        if (dict is! DBusDict) {
+          throw Exception('Expected DBusDict, got ${dict.runtimeType}');
+        }
+        return Map.fromEntries(dict.children.entries.map((entry) {
+          return MapEntry(
+            (entry.key as DBusString).value,
+            (entry.value as DBusString).value,
+          );
+        }));
+      }).toList();
+
       setState(() {
         _status = 'Address retrieved successfully';
-        _address = address;
+        _address = apps
+            .map((app) => 'App: ${app['name']} (ID: ${app['id']})')
+            .join('\n');
       });
     } catch (e) {
       setState(() {
