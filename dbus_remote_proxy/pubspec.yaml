@@ -1,6 +1,6 @@
 name: dbus_remote_proxy
 description: "A proxy class designed to interact with remote D-Bus objects. This class provides a simple way to call methods on remote D-Bus objects."
-version: 1.0.1
+version: 1.0.2
 homepage: https://github.com/dangchithao/flutter-samples/tree/main/dbus_remote_proxy
 
 environment:

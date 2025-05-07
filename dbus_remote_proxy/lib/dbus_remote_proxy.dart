@@ -10,7 +10,124 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 const String systemService = 'system';
 
 // convert native value to DBusValue
-DBusValue fromNativeValue(dynamic value) {
+// DBusValue fromNativeValue(dynamic value) {
+//   if (value is String) {
+//     return DBusString(value);
+//   } else if (value is int) {
+//     if (value.bitLength <= 8) return DBusByte(value);
+//     if (value.bitLength <= 16) return DBusInt16(value);
+//     if (value.bitLength <= 32) return DBusInt32(value);
+//     return DBusInt64(value);
+//   } else if (value is bool) {
+//     return DBusBoolean(value);
+//   } else if (value is double) {
+//     return DBusDouble(value);
+//   } else if (value is List) {
+//     if (value.isNotEmpty && value.first is Map) {
+//       return DBusArray(
+//         DBusSignature('a{ss}'),
+//         value.map((v) => fromNativeValue(v)).toList(),
+//       );
+//     } else if (value.isNotEmpty && value.first is List) {
+//       return DBusArray(
+//         DBusSignature('aa{ss}'),
+//         value.map((v) => fromNativeValue(v)).toList(),
+//       );
+//     } else {
+//       return DBusArray(
+//         DBusSignature(value.isNotEmpty
+//             ? fromNativeValue(value.first).signature.value
+//             : 'v'),
+//         value.map((v) => fromNativeValue(v)).toList(),
+//       );
+//     }
+//   } else if (value is Map) {
+//     return DBusDict(
+//       DBusSignature('s'),
+//       DBusSignature('s'),
+//       value.map((k, v) => MapEntry(
+//             DBusString(k.toString()),
+//             DBusString(v.toString()),
+//           )),
+//     );
+//   } else {
+//     throw Exception('Unsupported native value type: ${value.runtimeType}');
+//   }
+// }
+
+// Convert native value to DBusValue with support for variants and structs
+// TODO: should improve this method to cover all of replySignature
+DBusValue fromNativeValue(dynamic value, {DBusSignature? expectedSignature}) {
+  if (expectedSignature != null) {
+    if (expectedSignature.value.startsWith('a') && value is List) {
+      final childSignature =
+          DBusSignature(expectedSignature.value.substring(1));
+      return DBusArray(
+        childSignature,
+        value
+            .map((v) => fromNativeValue(v, expectedSignature: childSignature))
+            .toList(),
+      );
+    }
+    if (expectedSignature.value == '(oa{sv})' && value is List) {
+      if (value.length != 2) {
+        throw Exception('Struct (oa{sv}) need to have 2 elements');
+      }
+      return DBusStruct([
+        fromNativeValue(value[0], expectedSignature: DBusSignature('o')),
+        fromNativeValue(value[1], expectedSignature: DBusSignature('a{sv}')),
+      ]);
+    }
+
+    if (expectedSignature.value == 'a{sv}' && value is Map) {
+      return DBusDict(
+        DBusSignature('s'),
+        DBusSignature('v'),
+        value.map((k, v) => MapEntry(
+              DBusString(k.toString()),
+              fromNativeValue(v, expectedSignature: DBusSignature('v')),
+            )),
+      );
+    }
+
+    if (expectedSignature.value == 'v') {
+      if (value is String) {
+        return DBusVariant(DBusString(value));
+      } else if (value is int) {
+        if (value.bitLength <= 8) return DBusVariant(DBusByte(value));
+        if (value.bitLength <= 16) return DBusVariant(DBusInt16(value));
+        if (value.bitLength <= 32) return DBusVariant(DBusInt32(value));
+        return DBusVariant(DBusInt64(value));
+      } else if (value is bool) {
+        return DBusVariant(DBusBoolean(value));
+      } else if (value is double) {
+        return DBusVariant(DBusDouble(value));
+      } else if (value is List) {
+        if (value.isEmpty) return DBusVariant(DBusArray.string([]));
+        final childSignature = fromNativeValue(value.first).signature;
+        return DBusVariant(DBusArray(
+          childSignature,
+          value.map((v) => fromNativeValue(v)).toList(),
+        ));
+      } else if (value is Map) {
+        return DBusVariant(DBusDict(
+          DBusSignature('s'),
+          DBusSignature('v'),
+          value.map((k, v) => MapEntry(
+                DBusString(k.toString()),
+                fromNativeValue(v, expectedSignature: DBusSignature('v')),
+              )),
+        ));
+      } else {
+        throw Exception('Unsupported variant value type: ${value.runtimeType}');
+      }
+    }
+
+    if (expectedSignature.value == 'o' && value is String) {
+      return DBusObjectPath(value);
+    }
+  }
+
   if (value is String) {
     return DBusString(value);
   } else if (value is int) {
@@ -23,24 +140,12 @@ DBusValue fromNativeValue(dynamic value) {
   } else if (value is double) {
     return DBusDouble(value);
   } else if (value is List) {
-    if (value.isNotEmpty && value.first is Map) {
-      return DBusArray(
-        DBusSignature('a{ss}'),
-        value.map((v) => fromNativeValue(v)).toList(),
-      );
-    } else if (value.isNotEmpty && value.first is List) {
-      return DBusArray(
-        DBusSignature('aa{ss}'),
-        value.map((v) => fromNativeValue(v)).toList(),
-      );
-    } else {
-      return DBusArray(
-        DBusSignature(value.isNotEmpty
-            ? fromNativeValue(value.first).signature.value
-            : 'v'),
-        value.map((v) => fromNativeValue(v)).toList(),
-      );
-    }
+    if (value.isEmpty) return DBusArray.string([]);
+    final firstElement = fromNativeValue(value.first);
+    return DBusArray(
+      firstElement.signature,
+      value.map((v) => fromNativeValue(v)).toList(),
+    );
   } else if (value is Map) {
     return DBusDict(
       DBusSignature('s'),
@@ -150,7 +255,8 @@ class DBusRemoteObjectProxy {
             final result = jsonDecode(message);
             if (result['status'] == 'success') {
               final returnValues = (result['returnValues'] as List)
-                  .map((v) => fromNativeValue(v))
+                  .map((v) =>
+                      fromNativeValue(v, expectedSignature: replySignature))
                   .toList();
               completer.complete(DBusMethodSuccessResponse(returnValues));
             } else {

@@ -403,7 +403,7 @@ Contributions are welcome! Please submit a pull request or open an issue on the 
 ## License
 ------------
 
-This package is licensed under the MIT License. See the [LICENSE]([LICENSE](https://en.wikipedia.org/wiki/MIT_License)) file for details.
+This package is licensed under the MIT License. See the [LICENSE](https://en.wikipedia.org/wiki/MIT_License) file for details.
 
 ## Support
 ------------
