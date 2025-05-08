@@ -12,3 +12,8 @@
 
 * Update function convert native value to Dbus value, support more replySignature
 * Update README.md
+
+## 1.0.3
+* Refactoring code: DBusRemoteObjectProxy should keep all of the natures of DBusRemoteObject
+* Create DBusUtils and DBusValueConvert class
+* Add unit test
