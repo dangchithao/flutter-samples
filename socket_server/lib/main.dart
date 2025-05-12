@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:dbus/dbus.dart';
 import 'package:shelf/shelf_io.dart' as shelf_io;
 import 'package:shelf_web_socket/shelf_web_socket.dart';
+import 'package:socket_server/dbus_signal_converter.dart';
 
 void main() {
   startSocketServer();
@@ -100,6 +101,24 @@ void startSocketServer() async {
             name: serviceName,
             path: DBusObjectPath(path),
           );
+
+          if (member == 'PropertyChanged') {
+            final signalStream = DBusRemoteObjectSignalStream(
+              object: object,
+              interface: interface,
+              name: member,
+            );
+
+            print('Listening for Ethernet PropertyChanged...');
+            signalStream.listen((DBusSignal signal) {
+              print("===> signal $signal");
+
+              webSocket.sink.add(jsonEncode({
+                'status': 'success',
+                'signal': DBusSignalConverter.toJsonString(signal),
+              }));
+            });
+          }
 
           final result = await object.callMethod(
             interface,
