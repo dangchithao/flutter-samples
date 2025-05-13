@@ -72,7 +72,7 @@ dynamic parseDBusValue(DBusValue value) {
 void startSocketServer() async {
   DBusClient sessionClient = DBusClient.session();
   DBusClient systemClient = DBusClient.system();
-  print('Connected to D-Bus session bus');
+  print('Connected to D-Bus session/system bus');
 
   final handler = webSocketHandler((webSocket, _) {
     print('New client connected');
@@ -103,7 +103,7 @@ void startSocketServer() async {
               name: member,
             );
 
-            print('Listening for Ethernet PropertyChanged...');
+            print('Listening for PropertyChanged...');
             signalStream.listen((DBusSignal signal) {
               print("===> signal $signal");
 
