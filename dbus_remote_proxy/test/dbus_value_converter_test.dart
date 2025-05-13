@@ -1,6 +1,5 @@
 import 'package:dbus/dbus.dart';
 import 'package:dbus_remote_proxy/dbus_value_converter.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -52,7 +51,7 @@ void main() {
         final result = DBusValueConverter.fromNativeValue(['a', 'b', 'c']);
         expect(result, isA<DBusArray>());
         final array = result as DBusArray;
-        expect(array.signature, DBusSignature('as')); // Sửa kỳ vọng thành 'as'
+        expect(array.signature, DBusSignature('as'));
         expect(array.children, hasLength(3));
         expect(array.children, everyElement(isA<DBusString>()));
         expect(array.children.map((e) => (e as DBusString).value),
@@ -63,7 +62,7 @@ void main() {
         final result = DBusValueConverter.fromNativeValue([]);
         expect(result, isA<DBusArray>());
         final array = result as DBusArray;
-        expect(array.signature, DBusSignature('as')); // Sửa kỳ vọng thành 'as'
+        expect(array.signature, DBusSignature('as'));
         expect(array.children, isEmpty);
       });
 
@@ -107,7 +106,7 @@ void main() {
         );
         expect(result, isA<DBusArray>());
         final array = result as DBusArray;
-        expect(array.signature, DBusSignature('as')); // Sửa kỳ vọng thành 'as'
+        expect(array.signature, DBusSignature('as'));
         expect(array.children, hasLength(3));
         expect(array.children, everyElement(isA<DBusString>()));
         expect(array.children.map((e) => (e as DBusString).value),
@@ -205,7 +204,7 @@ void main() {
         final variant = result as DBusVariant;
         expect(variant.value, isA<DBusArray>());
         final array = variant.value as DBusArray;
-        expect(array.signature, DBusSignature('as')); // Sửa kỳ vọng thành 'as'
+        expect(array.signature, DBusSignature('as'));
         expect(array.children.map((e) => (e as DBusString).value), ['a', 'b']);
       });
 
@@ -256,8 +255,7 @@ void main() {
         );
         expect(result, isA<DBusArray>());
         final array = result as DBusArray;
-        expect(array.signature,
-            DBusSignature('a(oa{sv})')); // Sửa kỳ vọng thành 'a(oa{sv})'
+        expect(array.signature, DBusSignature('a(oa{sv})'));
         expect(array.children, hasLength(1));
         final struct = array.children[0] as DBusStruct;
         expect(struct.children[0], isA<DBusObjectPath>());

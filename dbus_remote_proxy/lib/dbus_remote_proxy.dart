@@ -9,7 +9,7 @@ import 'package:dbus_remote_proxy/dbus_value_converter.dart';
 import 'package:flutter/foundation.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
-// A Proxy class contain DBusRemoteObject to abstraction callMethod layer
+// A Proxy class extend from DBusRemoteObject to abstraction callMethod method
 class DBusRemoteObjectProxy extends DBusRemoteObject {
   WebSocketChannel? _channel;
   final bool _useWebSocket;
@@ -132,7 +132,8 @@ class DBusRemoteObjectProxy extends DBusRemoteObject {
 
   Future<void> close() async {
     if (_useWebSocket) {
-      _channel?.sink.close();
+      await _channel?.sink.close();
+      await _messageController.close();
     }
   }
 }

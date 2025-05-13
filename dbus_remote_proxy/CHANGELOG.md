@@ -17,3 +17,9 @@
 * Refactoring code: DBusRemoteObjectProxy should keep all of the natures of DBusRemoteObject
 * Create DBusUtils and DBusValueConvert class
 * Add unit test
+
+## 1.0.4
+* Create DbusRemoteObjectSignalStreamProxy that allow us listening the signal over a WebSocket connection 
+* Create a converter DBusSignalConverter
+* Add unit test
+* Update README.md
