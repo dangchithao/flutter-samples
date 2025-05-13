@@ -88,12 +88,6 @@ void startSocketServer() async {
           final String path = params['path'];
           final String interface = params['interface'];
           final String member = params['member'];
-          final values = (params['values'] as List)
-              .map((v) => fromNativeValue(v))
-              .toList();
-          final replySignature = params['replySignature'] != null
-              ? DBusSignature(params['replySignature'])
-              : null;
 
           final client = serviceType == 'system' ? systemClient : sessionClient;
           final object = DBusRemoteObject(
@@ -118,31 +112,38 @@ void startSocketServer() async {
                 'signal': DBusSignalConverter.toJsonString(signal),
               }));
             });
+          } else {
+            final values = (params['values'] as List)
+                .map((v) => fromNativeValue(v))
+                .toList();
+            final replySignature = params['replySignature'] != null
+                ? DBusSignature(params['replySignature'])
+                : null;
+
+            final result = await object.callMethod(
+              interface,
+              member,
+              values,
+              replySignature: replySignature,
+            );
+
+            print('result: $result');
+
+            final returnValues = result.returnValues.map((value) {
+              try {
+                return parseDBusValue(value);
+              } catch (e) {
+                throw Exception('Failed to parse DBusValue: $e');
+              }
+            }).toList();
+
+            print('returnValues: $returnValues');
+
+            webSocket.sink.add(jsonEncode({
+              'status': 'success',
+              'returnValues': returnValues,
+            }));
           }
-
-          final result = await object.callMethod(
-            interface,
-            member,
-            values,
-            replySignature: replySignature,
-          );
-
-          print('result: $result');
-
-          final returnValues = result.returnValues.map((value) {
-            try {
-              return parseDBusValue(value);
-            } catch (e) {
-              throw Exception('Failed to parse DBusValue: $e');
-            }
-          }).toList();
-
-          print('returnValues: $returnValues');
-
-          webSocket.sink.add(jsonEncode({
-            'status': 'success',
-            'returnValues': returnValues,
-          }));
         } catch (e) {
           print('Internal Server Error: $e');
           webSocket.sink.add(jsonEncode({
