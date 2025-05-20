@@ -50,11 +50,12 @@ This class allows you to call D-Bus methods with WebSocket support on web platfo
 
 ```dart
 import 'package:dbus/dbus.dart';
+import 'package:dbus_remote_proxy/dbus_client_proxy.dart';
 import 'package:dbus_remote_proxy/dbus_remote_proxy.dart';
 
 void main() async {
   final proxy = DBusRemoteObjectProxy(
-    type: 'system', // or 'session'
+    DBusClientProxy.system(), // or DBusClientProxy.session()
     name: 'org.example.Service',
     path: DBusObjectPath('/org/example/Object'),
   );
@@ -92,12 +93,13 @@ This class listens to D-Bus signals via WebSocket or native D-Bus.
 
 ```dart
 import 'package:dbus/dbus.dart';
+import 'package:dbus_remote_proxy/dbus_client_proxy.dart';
 import 'package:dbus_remote_proxy/dbus_remote_proxy.dart';
 import 'package:dbus_remote_proxy/dbus_remote_object_signal_stream_proxy.dart';
 
 void main() async {
   final proxy = DBusRemoteObjectProxy(
-    type: 'system',
+    DBusClientProxy.system(),
     name: 'org.example.Service',
     path: DBusObjectPath('/org/example/Object'),
   );
@@ -170,30 +172,46 @@ void main() async {
         final path = params['path'] as String;
         final interface = params['interface'] as String?;
         final member = params['member'] as String;
-        final values = (params['values'] as List)
-            .map((v) => fromNativeValue(v))
-            .toList();
-        final replySignature = params['replySignature'] != null
-            ? DBusSignature(params['replySignature'])
-            : null;
 
         final client = type == 'system' ? systemClient : sessionClient;
         final object = DBusRemoteObject(client, name: name, path: DBusObjectPath(path));
 
-        final result = await object.callMethod(
-          interface,
-          member,
-          values,
-          replySignature: replySignature,
-        );
+        if (member == 'PropertyChanged') {
+          final signalStream = DBusRemoteObjectSignalStream(
+            object: object,
+            interface: interface,
+            name: member,
+          );
 
-        //TODO: if you have face an error while convert the objects, then please double check here
-        final returnValues = result.returnValues.map((v) => v.toNative()).toList();
+          print('Listening for PropertyChanged...');
+          signalStream.listen((DBusSignal signal) {
+            webSocket.sink.add(jsonEncode({
+              'status': 'success',
+              'signal': DBusSignalConverter.toJsonString(signal),
+            }));
+          });
+        } else {
+          final values = (params['values'] as List)
+              .map((v) => fromNativeValue(v))
+              .toList();
+          final replySignature = params['replySignature'] != null
+              ? DBusSignature(params['replySignature'])
+              : null;
+          final result = await object.callMethod(
+            interface,
+            member,
+            values,
+            replySignature: replySignature,
+          );
 
-        webSocket.sink.add(jsonEncode({
-          'status': 'success',
-          'returnValues': returnValues,
-        }));
+          //NOTE: if you have face an error while convert the objects, then please double check here
+          final returnValues = result.returnValues.map((v) => v.toNative()).toList();
+
+          webSocket.sink.add(jsonEncode({
+            'status': 'success',
+            'returnValues': returnValues,
+          }));
+        }
       } catch (e) {
         webSocket.sink.add(jsonEncode({
           'status': 'error',

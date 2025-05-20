@@ -75,7 +75,7 @@ class DBusRemoteObjectSignalStreamProxy extends DBusRemoteObjectSignalStream {
 
     final request = jsonEncode({
       'serviceName': object.name,
-      'serviceType': object.type,
+      'serviceType': object.clientProxy.serviceType,
       'interface': interface,
       'member': name,
       'path': object.path.value,

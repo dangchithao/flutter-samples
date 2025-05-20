@@ -4,32 +4,28 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:dbus/dbus.dart';
-import 'package:dbus_remote_proxy/dbus_utils.dart';
+import 'package:dbus_remote_proxy/dbus_client_proxy.dart';
 import 'package:dbus_remote_proxy/dbus_value_converter.dart';
 import 'package:flutter/foundation.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 // A Proxy class extend from DBusRemoteObject to abstraction callMethod method
 class DBusRemoteObjectProxy extends DBusRemoteObject {
-  WebSocketChannel? _channel;
-  final bool _useWebSocket;
-  final StreamController<dynamic> _messageController =
-      StreamController.broadcast();
   static const String _ip =
       String.fromEnvironment('WEBSOCKET_IP', defaultValue: '127.0.0.1');
   static const String _port =
       String.fromEnvironment('WEBSOCKET_PORT', defaultValue: '3030');
-  String? pathValue;
 
-  final String type;
-  final String name;
-  final DBusObjectPath path;
+  final DBusClientProxy clientProxy;
+  WebSocketChannel? _channel;
+  final bool _useWebSocket;
+  final StreamController<dynamic> _messageController =
+      StreamController.broadcast();
 
-  DBusRemoteObjectProxy(
-      {required this.type, required this.name, required this.path})
+  DBusRemoteObjectProxy(this.clientProxy,
+      {required super.name, required super.path})
       : _useWebSocket = kIsWeb,
-        super(DBusUtils.getDBusClientByType(type), name: name, path: path) {
-    pathValue = path.value;
+        super(clientProxy) {
     if (_useWebSocket) {
       _connectToWebSocket();
 
@@ -71,8 +67,8 @@ class DBusRemoteObjectProxy extends DBusRemoteObject {
 
       final request = jsonEncode({
         'serviceName': this.name,
-        'serviceType': type,
-        'path': pathValue,
+        'serviceType': clientProxy.serviceType,
+        'path': path.value,
         'interface': interface,
         'member': name,
         'values': values.map((v) => v.toNative()).toList(),

@@ -23,3 +23,8 @@
 * Create a converter DBusSignalConverter
 * Add unit test
 * Update README.md
+
+## 1.0.5
+* Rename DbusRemoteObjectSignalStreamProxy to DBusRemoteObjectSignalStreamProxy
+* Create a new DBusClientProxy
+* Update README.md
