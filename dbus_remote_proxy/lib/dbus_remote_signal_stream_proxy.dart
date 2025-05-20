@@ -10,7 +10,7 @@ import 'package:flutter/foundation.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 // A Proxy class extend from DBusRemoteObjectSignalStream to abstraction listen method
-class DbusRemoteObjectSignalStreamProxy extends DBusRemoteObjectSignalStream {
+class DBusRemoteObjectSignalStreamProxy extends DBusRemoteObjectSignalStream {
   WebSocketChannel? _channel;
   final bool _useWebSocket;
   final StreamController<dynamic> _messageController =
@@ -24,7 +24,7 @@ class DbusRemoteObjectSignalStreamProxy extends DBusRemoteObjectSignalStream {
   final String interface;
   late DBusRemoteObjectProxy object;
 
-  DbusRemoteObjectSignalStreamProxy({
+  DBusRemoteObjectSignalStreamProxy({
     required this.object,
     required this.name,
     required this.interface,

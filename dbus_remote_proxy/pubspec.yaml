@@ -4,7 +4,7 @@ version: 1.0.4
 homepage: https://github.com/dangchithao/flutter-samples/tree/main/dbus_remote_proxy
 
 environment:
-  sdk: ^3.6.2
+  sdk: ">= 3.0.5 < 4.0.0"
   flutter: ">=1.17.0"
 
 dependencies:
