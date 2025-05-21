@@ -4,6 +4,7 @@ import 'package:dbus/dbus.dart';
 import 'package:shelf/shelf_io.dart' as shelf_io;
 import 'package:shelf_web_socket/shelf_web_socket.dart';
 import 'package:socket_server/dbus_signal_converter.dart';
+import 'package:socket_server/net_connman_agent.dart';
 
 void main() {
   startSocketServer();
@@ -88,13 +89,28 @@ void startSocketServer() async {
           final String path = params['path'];
           final String interface = params['interface'];
           final String member = params['member'];
+          final String passphrase = params['passphrase'] ?? '';
 
           final client = serviceType == 'system' ? systemClient : sessionClient;
+
+          if (passphrase != '') {
+            client.registerObject(NetConnmanAgent(passphrase: passphrase));
+          }
+
           final object = DBusRemoteObject(
             client,
             name: serviceName,
             path: DBusObjectPath(path),
           );
+
+          // TODO: investigate more about DBusClient, Agent and then improve this one
+          if (passphrase != '') {
+            await object.callMethod(
+              'net.connman.Manager',
+              'RegisterAgent',
+              [DBusObjectPath('/net/connman/agent')],
+            );
+          }
 
           if (member == 'PropertyChanged') {
             final signalStream = DBusRemoteObjectSignalStream(
