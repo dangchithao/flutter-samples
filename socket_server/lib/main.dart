@@ -103,15 +103,6 @@ void startSocketServer() async {
             path: DBusObjectPath(path),
           );
 
-          // TODO: investigate more about DBusClient, Agent and then improve this one
-          if (passphrase != '') {
-            await object.callMethod(
-              'net.connman.Manager',
-              'RegisterAgent',
-              [DBusObjectPath('/net/connman/agent')],
-            );
-          }
-
           if (member == 'PropertyChanged') {
             final signalStream = DBusRemoteObjectSignalStream(
               object: object,
