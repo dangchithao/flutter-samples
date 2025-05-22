@@ -6,6 +6,7 @@ import 'dart:convert';
 import 'package:dbus/dbus.dart';
 import 'package:dbus_remote_proxy/dbus_client_proxy.dart';
 import 'package:dbus_remote_proxy/dbus_value_converter.dart';
+import 'package:dbus_remote_proxy/net_connman_agent.dart';
 import 'package:flutter/foundation.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
@@ -65,15 +66,23 @@ class DBusRemoteObjectProxy extends DBusRemoteObject {
         throw Exception('WebSocket not connected');
       }
 
-      final request = jsonEncode({
+      Map<String, Object?> jsonData = {
         'serviceName': this.name,
         'serviceType': clientProxy.serviceType,
         'path': path.value,
         'interface': interface,
         'member': name,
-        'values': values.map((v) => v.toNative()).toList(),
+        'values': values.map((v) => DBusValueConverter.toNative(v)).toList(),
         'replySignature': replySignature?.value,
-      });
+      };
+
+      final DBusObject registeredDusObject = clientProxy.getRegisteredObject;
+
+      if (registeredDusObject is NetConnmanAgent) {
+        jsonData.addAll({'passphrase': registeredDusObject.passphrase});
+      }
+
+      final request = jsonEncode(jsonData);
       _channel!.sink.add(request);
 
       // wait message from StreamController

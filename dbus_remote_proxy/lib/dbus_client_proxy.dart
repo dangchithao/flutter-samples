@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 class DBusClientProxy extends DBusClient {
   static late String type;
   final DBusAddress _address;
+  late DBusObject _registeredObject;
 
   DBusClientProxy(super.address,
       {super.introspectable = true, super.messageBus = true, super.authClient})
@@ -42,4 +43,15 @@ class DBusClientProxy extends DBusClient {
 
   String get serviceType =>
       _address.value == 'unix:path=/system' ? 'system' : 'session';
+
+  @override
+  Future<void> registerObject(DBusObject object) async {
+    if (kIsWeb) {
+      _registeredObject = object;
+    } else {
+      super.registerObject(object);
+    }
+  }
+
+  DBusObject get getRegisteredObject => _registeredObject;
 }

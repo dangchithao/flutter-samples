@@ -28,3 +28,6 @@
 * Rename DbusRemoteObjectSignalStreamProxy to DBusRemoteObjectSignalStreamProxy
 * Create a new DBusClientProxy
 * Update README.md
+
+## 1.0.6
+* Support register an Agent to D-Bus
