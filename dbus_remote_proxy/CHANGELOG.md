@@ -31,3 +31,6 @@
 
 ## 1.0.6
 * Support register an Agent to D-Bus
+
+## 1.0.7
+* Fix bug '_registeredObject' has not been initialized.

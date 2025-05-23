@@ -11,7 +11,8 @@ class DBusClientProxy extends DBusClient {
 
   DBusClientProxy(super.address,
       {super.introspectable = true, super.messageBus = true, super.authClient})
-      : _address = address;
+      : _address = address,
+        _registeredObject = DBusObject(DBusObjectPath('/'));
 
   /// Creates a new DBus client to communicate with the system bus.
   factory DBusClientProxy.system({bool introspectable = true}) {
