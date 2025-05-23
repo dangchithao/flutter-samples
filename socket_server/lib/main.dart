@@ -4,38 +4,11 @@ import 'package:dbus/dbus.dart';
 import 'package:shelf/shelf_io.dart' as shelf_io;
 import 'package:shelf_web_socket/shelf_web_socket.dart';
 import 'package:socket_server/dbus_signal_converter.dart';
+import 'package:socket_server/dbus_value_converter.dart';
 import 'package:socket_server/net_connman_agent.dart';
 
 void main() {
   startSocketServer();
-}
-
-DBusValue fromNativeValue(dynamic value) {
-  if (value is String) {
-    return DBusString(value);
-  } else if (value is int) {
-    return DBusInt32(value);
-  } else if (value is bool) {
-    return DBusBoolean(value);
-  } else if (value is double) {
-    return DBusDouble(value);
-  } else if (value is List) {
-    return DBusArray(
-      DBusSignature(value.isNotEmpty
-          ? fromNativeValue(value.first).signature.value
-          : 'v'),
-      value.map((v) => fromNativeValue(v)).toList(),
-    );
-  } else if (value is Map) {
-    return DBusDict(
-      DBusSignature('s'),
-      DBusSignature('v'),
-      value.map(
-          (k, v) => MapEntry(DBusString(k.toString()), fromNativeValue(v))),
-    );
-  } else {
-    throw Exception('Unsupported native value type: ${value.runtimeType}');
-  }
 }
 
 dynamic parseDBusValue(DBusValue value) {
@@ -120,12 +93,13 @@ void startSocketServer() async {
               }));
             });
           } else {
-            final values = (params['values'] as List)
-                .map((v) => fromNativeValue(v))
-                .toList();
             final replySignature = params['replySignature'] != null
                 ? DBusSignature(params['replySignature'])
                 : null;
+            final values = (params['values'] as List)
+                .map((v) => DBusValueConverter.fromNativeValue(v,
+                    expectedSignature: replySignature))
+                .toList();
 
             final result = await object.callMethod(
               interface,
