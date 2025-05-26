@@ -8,42 +8,10 @@ import 'package:socket_server/dbus_value_converter.dart';
 import 'package:socket_server/net_connman_agent.dart';
 
 void main() {
-  startSocketServer();
+  _startSocketServer();
 }
 
-dynamic parseDBusValue(DBusValue value) {
-  if (value is DBusBoolean) return value.value;
-  if (value is DBusByte) return value.value;
-  if (value is DBusInt16) return value.value;
-  if (value is DBusUint16) return value.value;
-  if (value is DBusInt32) return value.value;
-  if (value is DBusUint32) return value.value;
-  if (value is DBusInt64) return value.value;
-  if (value is DBusUint64) return value.value;
-  if (value is DBusDouble) return value.value;
-  if (value is DBusString) return value.value;
-  if (value is DBusObjectPath) return value.value;
-  if (value is DBusSignature) return value.value;
-  if (value is DBusArray) {
-    return value.children.map((child) => parseDBusValue(child)).toList();
-  }
-  if (value is DBusDict) {
-    return value.children.map((key, val) {
-      final parsedKey = parseDBusValue(key);
-      final parsedVal = parseDBusValue(val);
-      return MapEntry(parsedKey, parsedVal);
-    });
-  }
-  if (value is DBusStruct) {
-    return value.children.map((child) => parseDBusValue(child)).toList();
-  }
-  if (value is DBusVariant) {
-    return parseDBusValue(value.value);
-  }
-  throw Exception('Unsupported DBusValue type: ${value.runtimeType}');
-}
-
-void startSocketServer() async {
+void _startSocketServer() async {
   DBusClient sessionClient = DBusClient.session();
   DBusClient systemClient = DBusClient.system();
   print('Connected to D-Bus session/system bus');
@@ -97,9 +65,10 @@ void startSocketServer() async {
                 ? DBusSignature(params['replySignature'])
                 : null;
             final values = (params['values'] as List)
-                .map((v) => DBusValueConverter.fromNativeValue(v,
-                    expectedSignature: replySignature))
+                .map((v) => DBusValueConverter.fromNativeValue(v))
                 .toList();
+
+            print('[main][values]: $values');
 
             final result = await object.callMethod(
               interface,
@@ -108,11 +77,11 @@ void startSocketServer() async {
               replySignature: replySignature,
             );
 
-            print('result: $result');
+            print('[main][result]: $result');
 
             final returnValues = result.returnValues.map((value) {
               try {
-                return parseDBusValue(value);
+                return DBusValueConverter.parseDBusValue(value);
               } catch (e) {
                 throw Exception('Failed to parse DBusValue: $e');
               }

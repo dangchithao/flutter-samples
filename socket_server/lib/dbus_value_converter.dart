@@ -74,6 +74,10 @@ class DBusValueConverter {
     }
 
     if (value is String) {
+      if (value.startsWith('/') && !_containsInvalidPathChars(value)) {
+        return DBusObjectPath(value);
+      }
+
       return DBusString(value);
     } else if (value is int) {
       if (value.bitLength <= 16) return DBusInt16(value);
@@ -145,5 +149,41 @@ class DBusValueConverter {
     }
 
     throw UnsupportedError('Unsupported DBusValue type: ${value.runtimeType}');
+  }
+
+  static dynamic parseDBusValue(DBusValue value) {
+    if (value is DBusBoolean) return value.value;
+    if (value is DBusByte) return value.value;
+    if (value is DBusInt16) return value.value;
+    if (value is DBusUint16) return value.value;
+    if (value is DBusInt32) return value.value;
+    if (value is DBusUint32) return value.value;
+    if (value is DBusInt64) return value.value;
+    if (value is DBusUint64) return value.value;
+    if (value is DBusDouble) return value.value;
+    if (value is DBusString) return value.value;
+    if (value is DBusObjectPath) return value.value;
+    if (value is DBusSignature) return value.value;
+    if (value is DBusArray) {
+      return value.children.map((child) => parseDBusValue(child)).toList();
+    }
+    if (value is DBusDict) {
+      return value.children.map((key, val) {
+        final parsedKey = parseDBusValue(key);
+        final parsedVal = parseDBusValue(val);
+        return MapEntry(parsedKey, parsedVal);
+      });
+    }
+    if (value is DBusStruct) {
+      return value.children.map((child) => parseDBusValue(child)).toList();
+    }
+    if (value is DBusVariant) {
+      return parseDBusValue(value.value);
+    }
+    throw Exception('Unsupported DBusValue type: ${value.runtimeType}');
+  }
+
+  static bool _containsInvalidPathChars(String path) {
+    return RegExp(r'[^A-Za-z0-9_/]').hasMatch(path);
   }
 }
