@@ -3,19 +3,6 @@ import 'package:dbus/dbus.dart';
 import 'package:dbus_remote_proxy/dbus_value_converter.dart';
 
 class DBusSignalConverter {
-  static Map<String, dynamic> toJson(DBusSignal signal) {
-    return {
-      'sender': signal.sender,
-      'path': signal.path.value,
-      'interface': signal.interface,
-      'name': signal.name,
-      'values': signal.values
-          .map((value) => DBusValueConverter.toNative(value))
-          .toList(),
-      'signature': signal.signature.value,
-    };
-  }
-
   static DBusSignal fromJson(Map<String, dynamic> json) {
     try {
       if (json['path'] == null ||
@@ -64,14 +51,6 @@ class DBusSignalConverter {
       return fromJson(jsonMap);
     } catch (e) {
       throw Exception('Failed to decode JSON string: $e');
-    }
-  }
-
-  static String toJsonString(DBusSignal signal) {
-    try {
-      return jsonEncode(toJson(signal));
-    } catch (e) {
-      throw Exception('Failed to encode DBusSignal to JSON: $e');
     }
   }
 }

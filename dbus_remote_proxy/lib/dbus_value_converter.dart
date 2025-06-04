@@ -120,7 +120,8 @@ class DBusValueConverter {
         return value.value;
       }
 
-      return value.toNative();
+      return '${value.signature.value}:${value.toNative()}';
+      // return value.toNative();
     } else if (value is DBusSignature) {
       return value.value;
     }
@@ -141,7 +142,8 @@ class DBusValueConverter {
     }
 
     if (value is DBusVariant) {
-      return toNative(value.value);
+      return '${value.signature.value}:${toNative(value.value)}';
+      // return toNative(value.value);
     }
 
     throw UnsupportedError('Unsupported DBusValue type: ${value.runtimeType}');

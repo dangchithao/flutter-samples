@@ -1,6 +1,6 @@
 name: dbus_remote_proxy
 description: "A Dart package that provides proxy classes for interacting with D-Bus remote objects through WebSocket connections."
-version: 1.0.7
+version: 1.0.8
 homepage: https://github.com/dangchithao/flutter-samples/tree/main/dbus_remote_proxy
 
 environment:

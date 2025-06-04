@@ -34,3 +34,6 @@
 
 ## 1.0.7
 * Fix bug '_registeredObject' has not been initialized.
+
+## 1.0.8
+* Fix bug: parse fails in socket server when data wrapped by DBusVariant
