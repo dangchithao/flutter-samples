@@ -4,72 +4,10 @@ class DBusValueConverter {
   static DBusValue fromNativeValue(dynamic value,
       {DBusSignature? expectedSignature}) {
     if (expectedSignature != null) {
-      if (expectedSignature.value.startsWith('a') && value is List) {
-        final childSignature =
-            DBusSignature(expectedSignature.value.substring(1));
-        return DBusArray(
-          childSignature,
-          value
-              .map((v) => fromNativeValue(v, expectedSignature: childSignature))
-              .toList(),
-        );
-      }
-      if (expectedSignature.value == '(oa{sv})' && value is List) {
-        if (value.length != 2) {
-          throw Exception('Struct (oa{sv}) requires 2 elements');
-        }
-        return DBusStruct([
-          fromNativeValue(value[0], expectedSignature: DBusSignature('o')),
-          fromNativeValue(value[1], expectedSignature: DBusSignature('a{sv}')),
-        ]);
-      }
+      final result = parseNativeValueWithSignature(value, expectedSignature);
 
-      if (expectedSignature.value == 'a{sv}' && value is Map) {
-        return DBusDict(
-          DBusSignature('s'),
-          DBusSignature('v'),
-          value.map((k, v) => MapEntry(
-                DBusString(k.toString()),
-                fromNativeValue(v, expectedSignature: DBusSignature('v')),
-              )),
-        );
-      }
-
-      if (expectedSignature.value == 'v') {
-        if (value is String) {
-          return DBusVariant(DBusString(value));
-        } else if (value is int) {
-          if (value.bitLength <= 16) return DBusVariant(DBusInt16(value));
-          if (value.bitLength <= 32) return DBusVariant(DBusInt32(value));
-          return DBusVariant(DBusInt64(value));
-        } else if (value is bool) {
-          return DBusVariant(DBusBoolean(value));
-        } else if (value is double) {
-          return DBusVariant(DBusDouble(value));
-        } else if (value is List) {
-          if (value.isEmpty) return DBusVariant(DBusArray.string([]));
-          final childSignature = fromNativeValue(value.first).signature;
-          return DBusVariant(DBusArray(
-            childSignature,
-            value.map((v) => fromNativeValue(v)).toList(),
-          ));
-        } else if (value is Map) {
-          return DBusVariant(DBusDict(
-            DBusSignature('s'),
-            DBusSignature('v'),
-            value.map((k, v) => MapEntry(
-                  DBusString(k.toString()),
-                  fromNativeValue(v, expectedSignature: DBusSignature('v')),
-                )),
-          ));
-        } else {
-          throw Exception(
-              'Unsupported variant value type: ${value.runtimeType}');
-        }
-      }
-
-      if (expectedSignature.value == 'o' && value is String) {
-        return DBusObjectPath(value);
+      if (result != null) {
+        return result;
       }
     }
 
@@ -78,7 +16,19 @@ class DBusValueConverter {
         return DBusObjectPath(value);
       }
 
-      return DBusString(value);
+      List<String> valueSplitted = value.split(':');
+
+      if (valueSplitted.length == 1) {
+        return DBusString(value);
+      }
+
+      final signature = valueSplitted[0];
+
+      if (signature == 'v') {
+        return DBusVariant(createDBusValue(valueSplitted[1], valueSplitted[2]));
+      }
+
+      return createDBusValue(signature, valueSplitted[1]);
     } else if (value is int) {
       if (value.bitLength <= 16) return DBusInt16(value);
       if (value.bitLength <= 32) return DBusInt32(value);
@@ -106,6 +56,77 @@ class DBusValueConverter {
     } else {
       throw Exception('Unsupported native value type: ${value.runtimeType}');
     }
+  }
+
+  static DBusValue? parseNativeValueWithSignature(
+      dynamic value, DBusSignature signature) {
+    if (signature.value.startsWith('a') && value is List) {
+      final childSignature = DBusSignature(signature.value.substring(1));
+      return DBusArray(
+        childSignature,
+        value
+            .map((v) => fromNativeValue(v, expectedSignature: childSignature))
+            .toList(),
+      );
+    }
+    if (signature.value == '(oa{sv})' && value is List) {
+      if (value.length != 2) {
+        throw Exception('Struct (oa{sv}) requires 2 elements');
+      }
+      return DBusStruct([
+        fromNativeValue(value[0], expectedSignature: DBusSignature('o')),
+        fromNativeValue(value[1], expectedSignature: DBusSignature('a{sv}')),
+      ]);
+    }
+
+    if (signature.value == 'a{sv}' && value is Map) {
+      return DBusDict(
+        DBusSignature('s'),
+        DBusSignature('v'),
+        value.map((k, v) => MapEntry(
+              DBusString(k.toString()),
+              fromNativeValue(v, expectedSignature: DBusSignature('v')),
+            )),
+      );
+    }
+
+    if (signature.value == 'v') {
+      if (value is String) {
+        return DBusVariant(DBusString(value));
+      } else if (value is int) {
+        if (value.bitLength <= 16) return DBusVariant(DBusInt16(value));
+        if (value.bitLength <= 32) return DBusVariant(DBusInt32(value));
+        return DBusVariant(DBusInt64(value));
+      } else if (value is bool) {
+        return DBusVariant(DBusBoolean(value));
+      } else if (value is double) {
+        return DBusVariant(DBusDouble(value));
+      } else if (value is List) {
+        if (value.isEmpty) return DBusVariant(DBusArray.string([]));
+        final childSignature = fromNativeValue(value.first).signature;
+        return DBusVariant(DBusArray(
+          childSignature,
+          value.map((v) => fromNativeValue(v)).toList(),
+        ));
+      } else if (value is Map) {
+        return DBusVariant(DBusDict(
+          DBusSignature('s'),
+          DBusSignature('v'),
+          value.map((k, v) => MapEntry(
+                DBusString(k.toString()),
+                fromNativeValue(v, expectedSignature: DBusSignature('v')),
+              )),
+        ));
+      } else {
+        throw Exception('Unsupported variant value type: ${value.runtimeType}');
+      }
+    }
+
+    if (signature.value == 'o' && value is String) {
+      return DBusObjectPath(value);
+    }
+
+    return null;
   }
 
   static dynamic toNative(DBusValue value) {
@@ -181,6 +202,77 @@ class DBusValueConverter {
       return parseDBusValue(value.value);
     }
     throw Exception('Unsupported DBusValue type: ${value.runtimeType}');
+  }
+
+  static DBusValue createDBusValue(String signature, String value) {
+    switch (signature) {
+      case 'b':
+        if (value.toLowerCase() == 'true') {
+          return DBusBoolean(true);
+        }
+        if (value.toLowerCase() == 'false') {
+          return DBusBoolean(false);
+        }
+        break;
+      case 'y':
+        final intValue = int.tryParse(value);
+        if (intValue != null && intValue >= 0 && intValue <= 255) {
+          return DBusByte(intValue);
+        }
+        break;
+      case 'n':
+        final intValue = int.tryParse(value);
+        if (intValue != null && intValue >= -32768 && intValue <= 32767) {
+          return DBusInt16(intValue);
+        }
+        break;
+      case 'q':
+        final intValue = int.tryParse(value);
+        if (intValue != null && intValue >= 0 && intValue <= 65535) {
+          return DBusUint16(intValue);
+        }
+        break;
+      case 'i':
+        final intValue = int.tryParse(value);
+        if (intValue != null &&
+            intValue >= -2147483648 &&
+            intValue <= 2147483647) {
+          return DBusInt32(intValue);
+        }
+        break;
+      case 'u':
+        final intValue = int.tryParse(value);
+        if (intValue != null && intValue >= 0 && intValue <= 4294967295) {
+          return DBusUint32(intValue);
+        }
+        break;
+      case 'x':
+        final intValue = int.tryParse(value);
+        if (intValue != null) return DBusInt64(intValue);
+        break;
+      case 't':
+        final intValue = int.tryParse(value);
+        if (intValue != null && intValue >= 0) return DBusUint64(intValue);
+        break;
+      case 'd':
+        final doubleValue = double.tryParse(value);
+        if (doubleValue != null) return DBusDouble(doubleValue);
+        break;
+      case 's':
+        return DBusString(value);
+      case 'o':
+        if (value.startsWith('/') && !_containsInvalidPathChars(value)) {
+          return DBusObjectPath(value);
+        }
+        break;
+      case 'g':
+        return DBusSignature(value);
+      default:
+        break;
+    }
+
+    throw ArgumentError(
+        'Unsupported signature "$signature" or incompatible value type "${value.runtimeType}"');
   }
 
   static bool _containsInvalidPathChars(String path) {
