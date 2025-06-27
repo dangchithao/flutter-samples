@@ -1,0 +1,13 @@
+{
+  "@@locale": "vi",
+  "settings": "Cài đặt",
+  "theme": "Giao diện",
+  "language": "Ngôn ngữ",
+  "system": "Hệ thống",
+  "light": "Sáng",
+  "dark": "Tối",
+  "english": "Tiếng Anh",
+  "vietnamese": "Tiếng Việt",
+  "save": "Lưu",
+  "cancel": "Hủy"
+}
