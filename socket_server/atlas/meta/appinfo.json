@@ -1,0 +1,8 @@
+{
+    "id": "com.atlas.app.socket",
+    "type": "native",
+    "name": "socket_server",
+    "description": "Test flutter apps",
+    "entry": "socket_server --bundle=./ --fullscreen -a com.atlas.app.socket",
+    "version": "1.0.0"
+}
