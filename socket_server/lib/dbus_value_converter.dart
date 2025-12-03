@@ -45,14 +45,22 @@ class DBusValueConverter {
         value.map((v) => fromNativeValue(v)).toList(),
       );
     } else if (value is Map) {
-      return DBusDict(
-        DBusSignature('s'),
-        DBusSignature('s'),
-        value.map((k, v) => MapEntry(
-              DBusString(k.toString()),
-              DBusString(v.toString()),
-            )),
-      );
+      final variantMap = <String, DBusVariant>{};
+
+      value.forEach((key, val) {
+        final inner = fromNativeValue(val);
+        variantMap[key] = DBusVariant(inner);
+      });
+
+      return DBusDict.stringVariant(variantMap);
+      // return DBusDict(
+      //   DBusSignature('s'),
+      //   DBusSignature('s'),
+      //   value.map((k, v) => MapEntry(
+      //         DBusString(k.toString()),
+      //         DBusString(v.toString()),
+      //       )),
+      // );
     } else {
       throw Exception('Unsupported native value type: ${value.runtimeType}');
     }
