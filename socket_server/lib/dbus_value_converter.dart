@@ -45,14 +45,14 @@ class DBusValueConverter {
         value.map((v) => fromNativeValue(v)).toList(),
       );
     } else if (value is Map) {
-      final variantMap = <String, DBusVariant>{};
-
-      value.forEach((key, val) {
-        final inner = fromNativeValue(val);
-        variantMap[key] = DBusVariant(inner);
-      });
-
-      return DBusDict.stringVariant(variantMap);
+      return DBusDict(
+        DBusSignature('s'),
+        DBusSignature('v'),
+        value.map((k, v) => MapEntry(
+              DBusString(k.toString()),
+              fromNativeValue(v, expectedSignature: DBusSignature('v')),
+            )),
+      );
       // return DBusDict(
       //   DBusSignature('s'),
       //   DBusSignature('s'),
