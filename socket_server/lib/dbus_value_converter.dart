@@ -24,6 +24,10 @@ class DBusValueConverter {
 
       final signature = valueSplitted[0];
 
+      if (valueSplitted.length > 3) {
+        return createDBusValue(signature, _removeDBusSignaturePrefix(value));
+      }
+
       if (signature == 'v') {
         return DBusVariant(createDBusValue(valueSplitted[1], valueSplitted[2]));
       }
@@ -45,22 +49,24 @@ class DBusValueConverter {
         value.map((v) => fromNativeValue(v)).toList(),
       );
     } else if (value is Map) {
+      if (value.isEmpty) {
+        return DBusDict(DBusSignature('s'), DBusSignature('v'), {});
+      }
+
+      final keys = value.keys;
+      if (!keys.every((k) => k is String)) {
+        throw ArgumentError(
+            'DBus dictionary keys must be strings, got: ${keys.map((e) => e.runtimeType)}');
+      }
+
       return DBusDict(
         DBusSignature('s'),
         DBusSignature('v'),
         value.map((k, v) => MapEntry(
-              DBusString(k.toString()),
-              fromNativeValue(v, expectedSignature: DBusSignature('v')),
+              fromNativeValue(k),
+              fromNativeValue(v),
             )),
       );
-      // return DBusDict(
-      //   DBusSignature('s'),
-      //   DBusSignature('s'),
-      //   value.map((k, v) => MapEntry(
-      //         DBusString(k.toString()),
-      //         DBusString(v.toString()),
-      //       )),
-      // );
     } else {
       throw Exception('Unsupported native value type: ${value.runtimeType}');
     }
@@ -285,5 +291,16 @@ class DBusValueConverter {
 
   static bool _containsInvalidPathChars(String path) {
     return RegExp(r'[^A-Za-z0-9_/]').hasMatch(path);
+  }
+
+  static String _removeDBusSignaturePrefix(String input) {
+    if (input.length < 3) return input;
+    if (input[1] == ':') {
+      final sig = input[0];
+      if ('ybnqihuxtdsoxgav'.contains(sig)) {
+        return input.substring(2);
+      }
+    }
+    return input;
   }
 }
