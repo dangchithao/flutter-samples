@@ -31,6 +31,7 @@ void _startSocketServer() async {
           final String interface = params['interface'];
           final String member = params['member'];
           final String passphrase = params['passphrase'] ?? '';
+          final String requestType = params['requestType'] ?? '';
 
           final client = serviceType == 'system' ? systemClient : sessionClient;
 
@@ -44,14 +45,14 @@ void _startSocketServer() async {
             path: DBusObjectPath(path),
           );
 
-          if (member == 'PropertyChanged') {
+          if (requestType == 'signal') {
             final signalStream = DBusRemoteObjectSignalStream(
               object: object,
               interface: interface,
               name: member,
             );
 
-            print('Listening for PropertyChanged...');
+            print('Listening for $member...');
             signalStream.listen((DBusSignal signal) {
               print("===> signal $signal");
 
